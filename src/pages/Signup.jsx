@@ -1,27 +1,13 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import logo from "../assets/logo.svg"
 import { FaRegEye, FaRegEyeSlash, FaSpinner } from "react-icons/fa";
 import { useNavigate } from "react-router"
 import httpInterceptor from "../utils/httpInterceptor";
-import axios from "axios";
-import useCredentialsStore from "../../store/store";
 import {message} from "antd"
 import { signupSchema } from "../utils/validateInput";
 import clientError from "../utils/clientError";
 
-// const validateInput = (item) => {
-
-// }
-
 const Signup = () => {
-  const [inputErr, setInputErr] = useState({
-    firstName: "",
-    lastName: "",
-    userName: "",
-    email: "",
-    password: ""
-  })
-
   const [inputEl, setInputEl] = useState({
     firstName: "Nesir",
     lastName: "Kamora",
@@ -34,7 +20,8 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const signupForm = useRef(null);
-  const setEmail = useCredentialsStore((state) => state.setEmail);
+
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const input = e.target;
@@ -62,18 +49,23 @@ const Signup = () => {
 
       let {data} = await httpInterceptor.post("/api/auth/signup", result.data);
       message.success("User registered")
-      setEmail(inputEl.email);
       console.log(data);
       signupForm.current.reset();
       navigate("/login");
     } catch (err) {
+      // message.error(err.response.data.message);
+      setError(clientError(err));
       console.dir(err);
-      clientError(err);
     }
     finally{
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if(!error) return;
+    message.error(error);
+  }, [error]);
 
   return (
     <div className="w-full h-screen bg-[white] flex flex-col items-center justify-start gap-2.5">

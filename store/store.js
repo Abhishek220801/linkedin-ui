@@ -1,19 +1,33 @@
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
-const useCredentialsStore = create((set) => ({
-    credentials: {username: ""},
-    setEmail: (email) => 
-        set((state) => ({
-            ...state.credentials,
-            email
+const useAuthStore = create(
+    persist((set) => ({
+    user: null,
+    isAuthenticated: false,
+    authInitialized: false,
+
+    setUser: (user) => 
+        set(() => ({
+            user,
+            isAuthenticated: true,
+            authInitialized: true,
         }
     )),
-    clearCredentials: () =>
+    clearUser: () =>
         set({
-            credentials: {
-                email: ""
-            }
+            user: null,
+            isAuthenticated: false,
+            authInitialized: true,
         })
-}))
+    }),
+    {
+        "name": "auth-storage",
 
-export default useCredentialsStore;
+        partialize: (state) => ({
+            user: state.user
+        })
+    }
+))
+
+export default useAuthStore;
