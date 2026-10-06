@@ -1,11 +1,14 @@
 import Navbar from "../shared/Navbar"
 import avatar from "../assets/avatar.png"
-import { FaCamera, FaPen, FaPencilAlt, FaPlus } from "react-icons/fa"
+import { FaCamera, FaPen, FaPlus } from "react-icons/fa"
 import useAuthStore from "../../store/store"
 import EditProfile from "../shared/EditProfile"
+import { useState } from "react"
 
 const Home = () => {
   const user = useAuthStore((state) => state.user)
+  const [edit, setEdit] = useState(false);
+
   return (
     <div className="w-full min-h-screen bg-[#f3f2e2] pt-20 flex flex-col items-start justify-center gap-5 px-5 lg:flex-row">
       <EditProfile/>
