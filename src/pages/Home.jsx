@@ -1,12 +1,14 @@
 import Navbar from "../shared/Navbar"
 import avatar from "../assets/avatar.png"
-import { FaCamera, FaPencilAlt, FaPlus } from "react-icons/fa"
+import { FaCamera, FaPen, FaPencilAlt, FaPlus } from "react-icons/fa"
 import useAuthStore from "../../store/store"
+import EditProfile from "../shared/EditProfile"
 
 const Home = () => {
   const user = useAuthStore((state) => state.user)
   return (
     <div className="w-full min-h-screen bg-[#f3f2e2] pt-20 flex flex-col items-start justify-center gap-5 px-5 lg:flex-row">
+      <EditProfile/>
       <Navbar />
       <div className="relative w-full lg:w-[25%] bg-white shadow-lg rounded-lg overflow-hidden">
         <div className="relative h-28 w-full bg-gray-300 overflow-hidden">
@@ -88,9 +90,10 @@ const Home = () => {
         text-[#2dc0ff]
         transition-all
         hover:bg-[#2dc0ff]/5
+        flex items-center justify-center gap-2 cursor-pointer
       "
           >
-            View Profile
+            Edit Profile <FaPen/>
           </button>
         </div>
       </div>
