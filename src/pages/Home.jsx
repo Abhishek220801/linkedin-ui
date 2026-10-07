@@ -3,15 +3,15 @@ import avatar from "../assets/avatar.png"
 import { FaCamera, FaPen, FaPlus } from "react-icons/fa"
 import useAuthStore from "../../store/store"
 import EditProfile from "../shared/EditProfile"
-import { useState } from "react"
+import { useShallow } from 'zustand/shallow';
 
 const Home = () => {
   const user = useAuthStore((state) => state.user)
-  const [edit, setEdit] = useState(false);
+  const [edit, setEdit] = useAuthStore(useShallow((state) => [state.edit, state.setEdit]))
 
   return (
     <div className="w-full min-h-screen bg-[#f3f2e2] pt-20 flex flex-col items-start justify-center gap-5 px-5 lg:flex-row">
-      <EditProfile/>
+      {edit && <EditProfile/>}
       <Navbar />
       <div className="relative w-full lg:w-[25%] bg-white shadow-lg rounded-lg overflow-hidden">
         <div className="relative h-28 w-full bg-gray-300 overflow-hidden">
@@ -95,6 +95,7 @@ const Home = () => {
         hover:bg-[#2dc0ff]/5
         flex items-center justify-center gap-2 cursor-pointer
       "
+      onClick={() => setEdit(true)}
           >
             Edit Profile <FaPen/>
           </button>

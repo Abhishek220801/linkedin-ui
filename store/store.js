@@ -6,6 +6,8 @@ const useAuthStore = create(
     user: null,
     isAuthenticated: false,
     authInitialized: false,
+    edit: false,
+    setEdit: (edit) => set(() => ({edit})),
 
     setUser: (user) => 
         set(() => ({
