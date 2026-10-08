@@ -4,6 +4,7 @@ import { FaCamera, FaPen, FaPlus } from "react-icons/fa"
 import useAuthStore from "../../store/store"
 import EditProfile from "../shared/EditProfile"
 import { useShallow } from 'zustand/shallow';
+import cover from "../assets/cover.png"
 
 const Home = () => {
   const user = useAuthStore((state) => state.user)
@@ -14,7 +15,7 @@ const Home = () => {
       {edit && <EditProfile/>}
       <Navbar />
       <div className="relative w-full lg:w-[25%] bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="relative h-28 w-full bg-gray-300 overflow-hidden">
+        <img src={cover} className="relative h-28 w-full bg-gray-300 overflow-hidden" />
           <button
             type="button"
             className="
@@ -27,12 +28,10 @@ const Home = () => {
         hover:bg-white hover:text-gray-900
       "
             aria-label="Change cover photo"
+            onClick={() => setEdit(true)}
           >
             <FaCamera size={14} />
           </button>
-
-          <img src="" alt="Cover" className="h-full w-full object-cover" />
-        </div>
 
         <div className="relative px-5 pb-5">
           <div className="relative -mt-9 mb-3 w-fit">
@@ -61,8 +60,10 @@ const Home = () => {
           shadow-sm
           transition-all
           hover:bg-[#0966c2]
+          outline-none
         "
               aria-label="Add profile photo"
+              onClick={() => setEdit(true)}
             >
               <FaPlus size={9} />
             </button>

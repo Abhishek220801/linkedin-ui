@@ -10,7 +10,7 @@ export const signupSchema = z.object({
     lastName: z
         .string()
         .trim()
-        .min(2, "Last name must be at least 2 characters")
+        .min(1, "Last name must be at least 1 character")
         .max(50, "Last name must be at most 50 characters"),
 
     userName: z
