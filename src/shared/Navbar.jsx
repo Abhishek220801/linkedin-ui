@@ -354,7 +354,7 @@ const Navbar = () => {
               "
             >
               <img
-                src={avatar}
+                src={user.profileImage || avatar}
                 alt="Your profile"
                 className="
                   h-8
@@ -387,7 +387,7 @@ const Navbar = () => {
                 <div className="flex flex-col items-center border-b border-gray-100 px-4 py-4">
                   <div className="h-[64px] w-[64px] overflow-hidden rounded-full">
                     <img
-                      src={avatar}
+                      src={user.profileImage || avatar}
                       alt="Your profile"
                       className="h-full w-full object-cover"
                     />

@@ -5,17 +5,22 @@ import useAuthStore from "../../store/store"
 import EditProfile from "../shared/EditProfile"
 import { useShallow } from 'zustand/shallow';
 import cover from "../assets/cover.png"
+import { useEffect } from "react"
 
 const Home = () => {
-  const user = useAuthStore((state) => state.user)
+  const [user, setUser] = useAuthStore(useShallow((state) => [state.user, state.setUser]))
   const [edit, setEdit] = useAuthStore(useShallow((state) => [state.edit, state.setEdit]))
+
+  useEffect(() => {
+    setUser(user);
+  }, user);
 
   return (
     <div className="w-full min-h-screen bg-[#f3f2e2] pt-20 flex flex-col items-start justify-center gap-5 px-5 lg:flex-row">
       {edit && <EditProfile/>}
       <Navbar />
       <div className="relative w-full lg:w-[25%] bg-white shadow-lg rounded-lg overflow-hidden">
-        <img src={cover} className="relative h-28 w-full bg-gray-300 overflow-hidden" />
+        <img src={user.coverImage || cover} className="relative h-28 w-full bg-gray-300 overflow-hidden" />
           <button
             type="button"
             className="
@@ -36,7 +41,7 @@ const Home = () => {
         <div className="relative px-5 pb-5">
           <div className="relative -mt-9 mb-3 w-fit">
             <img
-              src={avatar}
+              src={user.profileImage || avatar}
               alt="Your profile"
               className="
           h-18 w-18

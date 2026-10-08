@@ -7,6 +7,8 @@ import {
   MapPin,
   Briefcase,
   GraduationCap,
+  Loader,
+  Loader2,
 } from "lucide-react";
 
 import { useState } from "react";
@@ -16,6 +18,8 @@ import dp from "../assets/avatar.png";
 import cover from "../assets/cover.png"
 import httpInterceptor from "../utils/httpInterceptor";
 import { useEffect } from "react";
+import { FaSpinner } from "react-icons/fa";
+import { message } from "antd";
 
 const EditProfile = () => {
   const [setEdit, user, setUser] = useAuthStore(
@@ -59,6 +63,8 @@ const EditProfile = () => {
       description: "",
     },
   ]);
+
+  const [loading, setLoading] = useState(false);
 
   const [frontendProfileImg, setFrontendProfileImg] = useState(user.profileImage || dp);
   const [backendProfileImg, setBackendProfileImg] = useState(user.profileImage || dp);
@@ -126,6 +132,7 @@ const EditProfile = () => {
 
   const updateProfile = async () => {
     try {
+      setLoading(true);
       const formData = new FormData();
       formData.append("firstName", profileBasics.firstName);
       formData.append("lastName", profileBasics.lastName);
@@ -147,13 +154,17 @@ const EditProfile = () => {
 
       let result = await httpInterceptor.patch("/api/user/update-profile", formData);
 
+      message.success("Profile updated!", 0.9);
+
       for (const [key, value] of formData.entries()) {
         console.log(key, value);
       }
       setUser(result.data.user);
       console.log(result.data.user);
     } catch (err) {
-      console.log(err);
+      console.dir(err);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -735,7 +746,7 @@ const EditProfile = () => {
               active:scale-[0.98]
             "
           >
-            Save profile
+            <span>{loading ? <Loader2 className="animate-spin"/> : "Save Profile"}</span>
           </button>
 
         </div>
