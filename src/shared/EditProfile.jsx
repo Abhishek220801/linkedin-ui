@@ -44,7 +44,7 @@ const EditProfile = () => {
 
   const [skillInput, setSkillInput] = useState("");
 
-  const [education, setEducation] = useState([
+  const [education, setEducation] = useState(user.education || [
     {
       college: "",
       degree: "",
@@ -52,7 +52,7 @@ const EditProfile = () => {
     },
   ]);
 
-  const [experience, setExperience] = useState([
+  const [experience, setExperience] = useState(user.experience || [
     {
       title: "",
       company: "",
