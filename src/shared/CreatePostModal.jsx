@@ -1,5 +1,15 @@
-import { useState } from "react"
-import { Modal, Avatar, Dropdown, Button, Divider, Tooltip, message } from "antd"
+import { useState, useRef, useEffect } from "react"
+import {
+  Modal,
+  Avatar,
+  Dropdown,
+  Button,
+  Divider,
+  Tooltip,
+  Progress,
+  message,
+  notification,
+} from "antd"
 import {
   X,
   Globe2,
@@ -12,107 +22,199 @@ import {
   Send,
   FileText,
   Loader2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react"
 import httpInterceptor from "../utils/httpInterceptor"
 
-const CreatePostModal = ({ open, setOpen, user }) => {
+const MAX_IMAGES = 5
+const MAX_SIZE = 5 * 1024 * 1024 // keep in sync with multer limit
+
+// Toast helper: same key => updates the existing notification in place
+const showToast = (
+  key,
+  { title, description, icon, duration = 0, closable = false },
+) =>
+  notification.open({
+    key,
+    title,
+    description,
+    icon,
+    duration, // 0 = stays until closed/updated
+    closable,
+    placement: "bottomLeft",
+  })
+
+const audienceItems = [
+  {
+    key: "Anyone",
+    label: (
+      <div className="flex items-center gap-3 py-1">
+        <Globe2 size={17} />
+        <div>
+          <p className="m-0 text-sm font-medium">Anyone</p>
+          <p className="m-0 text-xs text-gray-500">
+            Anyone on or off LinkedIn
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: "Connections",
+    label: (
+      <div className="flex items-center gap-3 py-1">
+        <Globe2 size={17} />
+        <div>
+          <p className="m-0 text-sm font-medium">Connections only</p>
+          <p className="m-0 text-xs text-gray-500">
+            Your connections on LinkedIn
+          </p>
+        </div>
+      </div>
+    ),
+  },
+]
+
+const toolButtonClass = `
+  flex h-10 w-10 items-center justify-center
+  rounded-full
+  text-gray-600
+  transition
+  hover:bg-sky-50
+  hover:text-sky-600
+`
+
+const CreatePostModal = ({ open, setOpen, user, onPosted }) => {
   const [content, setContent] = useState("")
   const [audience, setAudience] = useState("Anyone")
+  const [images, setImages] = useState([]) // [{ file, preview }]
+  const inFlight = useRef(0)
 
-  const [clientImgs, setClientImgs] = useState([])
-  const [serverImgs, setServerImgs] = useState([])
-
-  const [publishing, setPublishing] = useState(false);
-
-  const audienceItems = [
-    {
-      key: "Anyone",
-      label: (
-        <div className="flex items-center gap-3 py-1">
-          <Globe2 size={17} />
-          <div>
-            <p className="m-0 text-sm font-medium">Anyone</p>
-            <p className="m-0 text-xs text-gray-500">
-              Anyone on or off LinkedIn
-            </p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "Connections",
-      label: (
-        <div className="flex items-center gap-3 py-1">
-          <Globe2 size={17} />
-          <div>
-            <p className="m-0 text-sm font-medium">Connections only</p>
-            <p className="m-0 text-xs text-gray-500">
-              Your connections on LinkedIn
-            </p>
-          </div>
-        </div>
-      ),
-    },
-  ]
+  const resetForm = (revoke = true) => {
+    if (revoke) images.forEach((i) => URL.revokeObjectURL(i.preview))
+    setImages([])
+    setContent("")
+    setAudience("Anyone")
+  }
 
   const handleClose = () => {
     setOpen(false)
-    setContent("")
+    resetForm()
   }
 
   const handleImage = () => {
     const input = document.createElement("input")
     input.type = "file"
-    input.accept = "image/*"
+    input.accept = "image/jpeg,image/png,image/webp"
     input.multiple = true
-    input.click()
-
-    const MAX_IMAGES = 5;
 
     input.onchange = () => {
-      if (!input.files?.length) return
+      const picked = Array.from(input.files ?? [])
+      if (!picked.length) return
 
-      let files = Array.from(input.files);
-      if(files.length > MAX_IMAGES){
-        message.error(`Can't select more than ${MAX_IMAGES} photos for a post`, 2);
-        return;
+      if (images.length + picked.length > MAX_IMAGES) {
+        message.error(`You can attach up to ${MAX_IMAGES} photos`)
+        return
       }
-      
-      setServerImgs((prev) => [...prev, ...files]);
-      const previews = files.map(file => URL.createObjectURL(file));
-      setClientImgs((prev) => [...prev, ...previews])
+      const tooBig = picked.find((f) => f.size > MAX_SIZE)
+      if (tooBig) {
+        message.error(`${tooBig.name} is larger than 5 MB`)
+        return
+      }
+
+      setImages((prev) => [
+        ...prev,
+        ...picked.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+      ])
     }
-  }
-
-  const handlePost = async () => {
-    if (!content.trim()) return
-
-    try {
-        setPublishing(true);
-        let formData = new FormData();
-        formData.append("description", content);
-        if(serverImgs.length)
-        {
-            serverImgs.forEach(img => formData.append("images", img));
-        }
-        const { data } = await httpInterceptor.post("/api/post/create", formData);
-        message.success("Post published");
-        setServerImgs([])
-        setClientImgs([]);
-
-        console.log(data);
-    
-        handleClose()
-    } catch (err) {
-        res.status(500).json({ message: err.message })
-    } finally {
-        setPublishing(false);
-    }
+    input.click()
   }
 
   const removeImage = (index) => {
-    return setClientImgs(clientImgs.filter((_img, idx) => idx !== index))
+    URL.revokeObjectURL(images[index].preview)
+    setImages((prev) => prev.filter((_, i) => i !== index))
   }
+
+  const publishInBackground = async (key, { text, imgs, audience }) => {
+    const formData = new FormData()
+    formData.append("description", text)
+    formData.append("audience", audience)
+    imgs.forEach(({ file }) => formData.append("images", file))
+
+    inFlight.current += 1
+    showToast(key, {
+      title: "Posting…",
+      description: <Progress percent={0} size="small" />,
+      icon: <Loader2 size={20} className="animate-spin text-sky-600" />,
+    })
+
+    try {
+      const { data } = await httpInterceptor.post(
+        "/api/post",
+        formData,
+        {
+          onUploadProgress: (e) => {
+            const pct = e.total ? Math.round((e.loaded * 100) / e.total) : 0
+            showToast(key, {
+              title: "Posting…",
+              // browser -> server is done at 100%, but server -> Cloudinary is still running
+              description:
+                pct >= 100 ? (
+                  "Processing images…"
+                ) : (
+                  <Progress percent={pct} size="small" />
+                ),
+              icon: <Loader2 size={20} className="animate-spin text-sky-600" />,
+            })
+          },
+        },
+      )
+
+      showToast(key, {
+        title: "Post published",
+        description: "Your post is now live.",
+        icon: <CheckCircle2 size={20} className="text-green-600" />,
+        duration: 4, // auto-vanishes after 4s
+        closable: true,
+      })
+      onPosted?.(data.post) // let the parent add it to the feed
+    } catch (err) {
+      showToast(key, {
+        title: "Couldn't publish your post",
+        description:
+          err.response?.data?.message ??
+          "Please check your connection and try again.",
+        icon: <XCircle size={20} className="text-red-500" />,
+        duration: 0, // stays until the user dismisses it
+        closable: true,
+      })
+    } finally {
+      inFlight.current -= 1
+      imgs.forEach((i) => URL.revokeObjectURL(i.preview))
+    }
+  }
+
+  const handlePost = () => {
+    const text = content.trim()
+    if (!text && images.length === 0) return
+
+    const key = `post-${Date.now()}` // unique per post, so multiple can be in flight
+    const snapshot = { text, imgs: images, audience }
+
+    setOpen(false)
+    resetForm(false) // don't revoke: the background upload still owns these previews
+    publishInBackground(key, snapshot)
+  }
+
+  // Warn if the user tries to leave while a post is still uploading
+  useEffect(() => {
+    const warn = (e) => {
+      if (inFlight.current > 0) e.preventDefault()
+    }
+    window.addEventListener("beforeunload", warn)
+    return () => window.removeEventListener("beforeunload", warn)
+  }, [])
 
   return (
     <Modal
@@ -134,7 +236,6 @@ const CreatePostModal = ({ open, setOpen, user }) => {
         },
       }}
     >
-      {/* ================= HEADER ================= */}
 
       <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
         <div>
@@ -161,8 +262,6 @@ const CreatePostModal = ({ open, setOpen, user }) => {
         </button>
       </div>
 
-      {/* ================= USER ================= */}
-
       <div className="px-5 pt-5">
         <div className="flex items-start gap-3">
           <Avatar size={48} src={user?.profileImage} className="shrink-0">
@@ -177,8 +276,6 @@ const CreatePostModal = ({ open, setOpen, user }) => {
             <p className="m-0 mt-0.5 truncate text-xs text-gray-500">
               {user?.headline || "Software Engineer"}
             </p>
-
-            {/* Audience */}
 
             <Dropdown
               menu={{
@@ -211,8 +308,6 @@ const CreatePostModal = ({ open, setOpen, user }) => {
         </div>
       </div>
 
-      {/* ================= COMPOSER ================= */}
-
       <div className="px-5 pt-5">
         <textarea
           autoFocus
@@ -234,15 +329,15 @@ const CreatePostModal = ({ open, setOpen, user }) => {
           "
         />
 
-        {clientImgs.length > 0 && (
+        {images.length > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-2">
-            {clientImgs.map((src, index) => (
+            {images.map(({ preview }, index) => (
               <div
-                key={src}
+                key={preview}
                 className="relative aspect-square overflow-hidden rounded-lg border border-gray-200"
               >
                 <img
-                  src={src}
+                  src={preview}
                   alt={`Selected ${index + 1}`}
                   className="h-full w-full object-cover"
                 />
@@ -251,13 +346,13 @@ const CreatePostModal = ({ open, setOpen, user }) => {
                   type="button"
                   onClick={() => removeImage(index)}
                   className="
-            absolute right-1.5 top-1.5
-            flex h-6 w-6 items-center justify-center
-            rounded-full
-            bg-black/60
-            text-white
-            hover:bg-black/80
-          "
+                    absolute right-1.5 top-1.5
+                    flex h-6 w-6 items-center justify-center
+                    rounded-full
+                    bg-black/60
+                    text-white
+                    hover:bg-black/80
+                  "
                 >
                   <X size={14} />
                 </button>
@@ -265,8 +360,6 @@ const CreatePostModal = ({ open, setOpen, user }) => {
             ))}
           </div>
         )}
-
-        {/* Character count */}
 
         <div className="flex justify-end">
           <span
@@ -278,8 +371,6 @@ const CreatePostModal = ({ open, setOpen, user }) => {
           </span>
         </div>
       </div>
-
-      {/* ================= QUICK ACTION ================= */}
 
       <div className="px-5 pb-4">
         <button
@@ -314,14 +405,8 @@ const CreatePostModal = ({ open, setOpen, user }) => {
         <div className="flex items-center gap-1">
           <Tooltip title="Add a photo">
             <button
-              className="
-                flex h-10 w-10 items-center justify-center
-                rounded-full
-                text-gray-600
-                transition
-                hover:bg-sky-50
-                hover:text-sky-600
-              "
+              type="button"
+              className={toolButtonClass}
               onClick={handleImage}
             >
               <Image size={20} />
@@ -329,70 +414,32 @@ const CreatePostModal = ({ open, setOpen, user }) => {
           </Tooltip>
 
           <Tooltip title="Add a video">
-            <button
-              className="
-                flex h-10 w-10 items-center justify-center
-                rounded-full
-                text-gray-600
-                transition
-                hover:bg-sky-50
-                hover:text-sky-600
-              "
-            >
+            <button type="button" className={toolButtonClass}>
               <Video size={20} />
             </button>
           </Tooltip>
 
           <Tooltip title="Add a document">
-            <button
-              className="
-                flex h-10 w-10 items-center justify-center
-                rounded-full
-                text-gray-600
-                transition
-                hover:bg-sky-50
-                hover:text-sky-600
-              "
-            >
+            <button type="button" className={toolButtonClass}>
               <FileText size={19} />
             </button>
           </Tooltip>
 
           <Tooltip title="Celebrate an occasion">
-            <button
-              className="
-                flex h-10 w-10 items-center justify-center
-                rounded-full
-                text-gray-600
-                transition
-                hover:bg-sky-50
-                hover:text-sky-600
-              "
-            >
+            <button type="button" className={toolButtonClass}>
               <CalendarDays size={19} />
             </button>
           </Tooltip>
 
           <Tooltip title="Add emoji">
-            <button
-              className="
-                flex h-10 w-10 items-center justify-center
-                rounded-full
-                text-gray-600
-                transition
-                hover:bg-sky-50
-                hover:text-sky-600
-              "
-            >
+            <button type="button" className={toolButtonClass}>
               <Smile size={20} />
             </button>
           </Tooltip>
         </div>
       </div>
 
-      <Divider className="!my-0" />
-
-      {/* ================= FOOTER ================= */}
+      <Divider className="my-0!" />
 
       <div className="flex items-center justify-between bg-white px-5 py-3">
         <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -402,18 +449,14 @@ const CreatePostModal = ({ open, setOpen, user }) => {
 
         <Button
           type="primary"
-          disabled={!content.trim() || content.length > 3000}
+          disabled={
+            (!content.trim() && images.length === 0) || content.length > 3000
+          }
           onClick={handlePost}
-          className="
-            !h-9
-            !rounded-full
-            !px-5
-            !font-semibold
-            !shadow-none
-          "
-           icon={publishing ? <Loader2 className="animate-spin"/> : <Send size={15} />}
+          icon={<Send size={15} />}
+          className="h-9! rounded-full! px-5! font-semibold! shadow-none!"
         >
-          {publishing ? "Publishing" : "Post"}
+          Post
         </Button>
       </div>
     </Modal>

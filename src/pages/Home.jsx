@@ -9,6 +9,9 @@ import { useEffect } from "react"
 import { Modal } from "antd"
 import CreatePostModal from "../shared/CreatePostModal"
 import { useState } from "react"
+import httpInterceptor from "../utils/httpInterceptor"
+import usePostStore from "../../store/usePostStore"
+import Post from "./Post"
 
 const Home = () => {
   const [user, setUser] = useAuthStore(
@@ -18,11 +21,24 @@ const Home = () => {
     useShallow((state) => [state.edit, state.setEdit]),
   )
 
+  const [posts, setPosts] = usePostStore(useShallow((state) => [state.posts, state.setPosts]));
+
   const [openPostModal, setOpenPostModal] = useState(false)
 
+  const fetchPosts = async () => {
+    try {
+      const {data} = await httpInterceptor.get("/api/post");
+      setPosts(data.posts)
+      console.log(data.posts);
+    } catch (err) {
+      console.dir(err);
+      throw err;
+    }
+  }
+
   useEffect(() => {
-    setUser(user)
-  }, [user])
+    fetchPosts();
+  }, [])
 
   return (
     <div className="w-full min-h-screen bg-[#f3f2e2] pt-20 flex flex-col items-start justify-center gap-5 px-5 lg:flex-row">
@@ -201,198 +217,8 @@ const Home = () => {
         </div>
 
         {/* ================= POST 1 ================= */}
-        <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          {/* Post header */}
-          <div className="flex items-start justify-between p-4">
-            <div className="flex gap-3">
-              <img
-                src={avatar}
-                alt="User"
-                className="h-11 w-11 rounded-full object-cover"
-              />
+        {posts.map(p => <Post post={p}/>)}
 
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Ayush Sahu
-                </h3>
-
-                <p className="mt-0.5 text-xs text-gray-500">
-                  Software Engineer · Full Stack Developer
-                </p>
-
-                <p className="mt-1 text-[11px] text-gray-400">2h · 🌐</p>
-              </div>
-            </div>
-
-            <button
-              className="
-          rounded-full p-2
-          text-gray-400
-          transition
-          hover:bg-gray-100
-          hover:text-gray-700
-        "
-            >
-              •••
-            </button>
-          </div>
-
-          {/* Post content */}
-          <div className="px-4 pb-3">
-            <p className="whitespace-pre-line text-sm leading-6 text-gray-800">
-              Just finished working on a new feature for my project. Really
-              enjoying the process of building scalable applications and
-              learning something new every day. 🚀 What's something you're
-              currently building?
-            </p>
-          </div>
-
-          {/* Optional image */}
-          <div className="overflow-hidden border-y border-gray-100">
-            <img
-              src={cover}
-              alt="Post"
-              className="max-h-[480px] w-full object-cover"
-            />
-          </div>
-
-          {/* Engagement count */}
-          <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-              <span
-                className="
-          flex h-5 w-5 items-center justify-center
-          rounded-full bg-sky-500 text-[10px] text-white
-        "
-              >
-                👍
-              </span>
-
-              <span>42 reactions</span>
-            </div>
-
-            <div className="flex gap-3">
-              <span>8 comments</span>
-              <span>3 reposts</span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="mx-4 border-t border-gray-100">
-            <div className="grid grid-cols-4">
-              <button
-                className="
-            flex items-center justify-center gap-2
-            py-3
-            text-xs font-medium text-gray-600
-            transition
-            hover:bg-gray-50
-          "
-              >
-                👍 Like
-              </button>
-
-              <button
-                className="
-            flex items-center justify-center gap-2
-            py-3
-            text-xs font-medium text-gray-600
-            transition
-            hover:bg-gray-50
-          "
-              >
-                💬 Comment
-              </button>
-
-              <button
-                className="
-            flex items-center justify-center gap-2
-            py-3
-            text-xs font-medium text-gray-600
-            transition
-            hover:bg-gray-50
-          "
-              >
-                ↗ Repost
-              </button>
-
-              <button
-                className="
-            flex items-center justify-center gap-2
-            py-3
-            text-xs font-medium text-gray-600
-            transition
-            hover:bg-gray-50
-          "
-              >
-                ✈ Send
-              </button>
-            </div>
-          </div>
-        </article>
-
-        {/* ================= POST 2 ================= */}
-        <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-start justify-between p-4">
-            <div className="flex gap-3">
-              <img
-                src={avatar}
-                alt="User"
-                className="h-11 w-11 rounded-full object-cover"
-              />
-
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Rahul Sharma
-                </h3>
-
-                <p className="mt-0.5 text-xs text-gray-500">
-                  Senior Software Engineer
-                </p>
-
-                <p className="mt-1 text-[11px] text-gray-400">5h · 🌐</p>
-              </div>
-            </div>
-
-            <button
-              className="
-          rounded-full p-2
-          text-gray-400
-          hover:bg-gray-100
-        "
-            >
-              •••
-            </button>
-          </div>
-
-          <div className="px-4 pb-4">
-            <p className="text-sm leading-6 text-gray-800">
-              The best way to learn software engineering isn't just watching
-              tutorials.
-              <br />
-              <br />
-              Build something. Break it. Debug it. Ship it. Then do it again. 💻
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-gray-100 px-4">
-            <button className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              👍 Like
-            </button>
-
-            <button className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              💬 Comment
-            </button>
-
-            <button className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              ↗ Repost
-            </button>
-
-            <button className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              ✈ Send
-            </button>
-          </div>
-        </article>
       </div>
 
       {/* RIGHT */}
