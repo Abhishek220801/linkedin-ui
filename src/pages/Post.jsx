@@ -21,7 +21,7 @@ const Post = ({post}) => {
               {author.headline}
             </p>
 
-            <p className="mt-1 text-[11px] text-gray-400">{moment(createdAt).format("H")} · 🌐</p>
+            <p className="mt-1 text-[11px] text-gray-400">{moment(createdAt).fromNow()} · 🌐</p>
           </div>
         </div>
 

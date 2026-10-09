@@ -26,9 +26,14 @@ import {
   XCircle,
 } from "lucide-react"
 import httpInterceptor from "../utils/httpInterceptor"
+import avatar from "../assets/avatar.png"
+import usePostStore from "../../store/usePostStore"
+import { useShallow } from "zustand/shallow"
 
 const MAX_IMAGES = 5
 const MAX_SIZE = 5 * 1024 * 1024 // keep in sync with multer limit
+
+const [posts, setPosts] = usePostStore(useShallow(state => [state.posts, state.setPosts]))
 
 // Toast helper: same key => updates the existing notification in place
 const showToast = (
@@ -170,6 +175,7 @@ const CreatePostModal = ({ open, setOpen, user, onPosted }) => {
           },
         },
       )
+      setPosts(data.posts);
 
       showToast(key, {
         title: "Post published",
@@ -264,7 +270,7 @@ const CreatePostModal = ({ open, setOpen, user, onPosted }) => {
 
       <div className="px-5 pt-5">
         <div className="flex items-start gap-3">
-          <Avatar size={48} src={user?.profileImage} className="shrink-0">
+          <Avatar size={48} src={user?.profileImage || avatar} className="shrink-0">
             {user?.firstName?.[0]}
           </Avatar>
 

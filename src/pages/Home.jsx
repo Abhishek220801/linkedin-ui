@@ -23,7 +23,11 @@ const Home = () => {
 
   const [posts, setPosts] = usePostStore(useShallow((state) => [state.posts, state.setPosts]));
 
-  const [openPostModal, setOpenPostModal] = useState(false)
+  const [openPostModal, setOpenPostModal] = useState(false);
+
+  useEffect(() =>{
+    fetchPosts();
+  }, [posts]);
 
   const fetchPosts = async () => {
     try {
@@ -48,7 +52,7 @@ const Home = () => {
       <div className="relative w-full lg:w-[25%] bg-white shadow-lg rounded-lg overflow-hidden">
         <img
           src={user.coverImage || cover}
-          className="relative h-28 w-full bg-gray-300 overflow-hidden"
+          className="relative h-28 w-full bg-gray-300 overflow-hidden object-cover"
         />
         <button
           type="button"

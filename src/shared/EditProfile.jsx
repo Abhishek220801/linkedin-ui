@@ -7,7 +7,6 @@ import {
   MapPin,
   Briefcase,
   GraduationCap,
-  Loader,
   Loader2,
 } from "lucide-react";
 
@@ -18,7 +17,6 @@ import dp from "../assets/avatar.png";
 import cover from "../assets/cover.png"
 import httpInterceptor from "../utils/httpInterceptor";
 import { useEffect } from "react";
-import { FaSpinner } from "react-icons/fa";
 import { message } from "antd";
 
 const EditProfile = () => {
@@ -165,6 +163,7 @@ const EditProfile = () => {
       console.dir(err);
     } finally {
       setLoading(false);
+      setEdit(false)
     }
   }
 
