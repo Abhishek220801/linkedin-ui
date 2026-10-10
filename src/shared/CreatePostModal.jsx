@@ -28,12 +28,9 @@ import {
 import httpInterceptor from "../utils/httpInterceptor"
 import avatar from "../assets/avatar.png"
 import usePostStore from "../../store/usePostStore"
-import { useShallow } from "zustand/shallow"
 
 const MAX_IMAGES = 5
-const MAX_SIZE = 5 * 1024 * 1024 // keep in sync with multer limit
-
-const [posts, setPosts] = usePostStore(useShallow(state => [state.posts, state.setPosts]))
+const MAX_SIZE = 10 * 1024 * 1024
 
 // Toast helper: same key => updates the existing notification in place
 const showToast = (
@@ -45,7 +42,7 @@ const showToast = (
     title,
     description,
     icon,
-    duration, // 0 = stays until closed/updated
+    duration,
     closable,
     placement: "bottomLeft",
   })
@@ -90,15 +87,16 @@ const toolButtonClass = `
   hover:text-sky-600
 `
 
-const CreatePostModal = ({ open, setOpen, user, onPosted }) => {
+const CreatePostModal = ({ open, setOpen, user }) => {
   const [content, setContent] = useState("")
   const [audience, setAudience] = useState("Anyone")
   const [images, setImages] = useState([]) // [{ file, preview }]
   const inFlight = useRef(0)
-
+  const addPost = usePostStore((s) => s.addPost)
+  
   const resetForm = (revoke = true) => {
     if (revoke) images.forEach((i) => URL.revokeObjectURL(i.preview))
-    setImages([])
+      setImages([])
     setContent("")
     setAudience("Anyone")
   }
@@ -175,8 +173,8 @@ const CreatePostModal = ({ open, setOpen, user, onPosted }) => {
           },
         },
       )
-      setPosts(data.posts);
 
+    addPost(data.post)          // Home re-renders instantly
       showToast(key, {
         title: "Post published",
         description: "Your post is now live.",
@@ -184,7 +182,7 @@ const CreatePostModal = ({ open, setOpen, user, onPosted }) => {
         duration: 4, // auto-vanishes after 4s
         closable: true,
       })
-      onPosted?.(data.post) // let the parent add it to the feed
+      // showToast(key, { title: "Post published", /* ... */ })
     } catch (err) {
       showToast(key, {
         title: "Couldn't publish your post",

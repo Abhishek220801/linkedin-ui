@@ -1,241 +1,486 @@
-import Navbar from "../shared/Navbar"
-import avatar from "../assets/avatar.png"
-import { FaCamera, FaPen, FaPlus } from "react-icons/fa"
-import useAuthStore from "../../store/store"
-import EditProfile from "../shared/EditProfile"
-import { useShallow } from "zustand/shallow"
-import cover from "../assets/cover.png"
-import { useEffect } from "react"
-import { Modal } from "antd"
-import CreatePostModal from "../shared/CreatePostModal"
-import { useState } from "react"
-import httpInterceptor from "../utils/httpInterceptor"
-import usePostStore from "../../store/usePostStore"
-import Post from "./Post"
+import Navbar from "../shared/Navbar";
+import avatar from "../assets/avatar.png";
+import { FaCamera, FaPen, FaPlus } from "react-icons/fa";
+import useAuthStore from "../../store/store";
+import EditProfile from "../shared/EditProfile";
+import { useShallow } from "zustand/shallow";
+import cover from "../assets/cover.png";
+import { useEffect, useState } from "react";
+import CreatePostModal from "../shared/CreatePostModal";
+import httpInterceptor from "../utils/httpInterceptor";
+import usePostStore from "../../store/usePostStore";
+import Post from "./Post";
 
 const Home = () => {
-  const [user, setUser] = useAuthStore(
-    useShallow((state) => [state.user, state.setUser]),
-  )
-  const [edit, setEdit] = useAuthStore(
-    useShallow((state) => [state.edit, state.setEdit]),
-  )
+  const user = useAuthStore((state) => state.user);
 
-  const [posts, setPosts] = usePostStore(useShallow((state) => [state.posts, state.setPosts]));
+  const [edit, setEdit] = useAuthStore(
+    useShallow((state) => [state.edit, state.setEdit])
+  );
+
+  const posts = usePostStore((state) => state.posts);
+  const setPosts = usePostStore((state) => state.setPosts);
 
   const [openPostModal, setOpenPostModal] = useState(false);
 
-  useEffect(() =>{
-    fetchPosts();
-  }, [posts]);
-
+  // -----------------------------------------
+  // Fetch posts
+  // -----------------------------------------
   const fetchPosts = async () => {
     try {
-      const {data} = await httpInterceptor.get("/api/post");
-      setPosts(data.posts)
-      console.log(data.posts);
+      const { data } = await httpInterceptor.get("/api/post");
+      setPosts(data.posts);
     } catch (err) {
       console.dir(err);
-      throw err;
     }
-  }
+  };
 
   useEffect(() => {
     fetchPosts();
-  }, [])
+  }, [setPosts]);
 
   return (
-    <div className="w-full min-h-screen bg-[#f3f2e2] pt-20 flex flex-col items-start justify-center gap-5 px-5 lg:flex-row">
-      {edit && <EditProfile />}
+    <div className="min-h-screen w-full bg-[#f3f2ef]">
+
+      {/* =========================================
+          NAVBAR
+      ========================================= */}
       <Navbar />
-      {/* LEFT */}
-      <div className="relative w-full lg:w-[25%] bg-white shadow-lg rounded-lg overflow-hidden">
-        <img
-          src={user.coverImage || cover}
-          className="relative h-28 w-full bg-gray-300 overflow-hidden object-cover"
-        />
-        <button
-          type="button"
-          className="
-        absolute right-3 top-3 z-10
-        flex h-8 w-8 items-center justify-center
-        rounded-full bg-white/90
-        text-gray-600
-        shadow-sm
-        transition-all
-        hover:bg-white hover:text-gray-900
-      "
-          aria-label="Change cover photo"
-          onClick={() => setEdit(true)}
-        >
-          <FaCamera size={14} />
-        </button>
 
-        <div className="relative px-5 pb-5">
-          <div className="relative -mt-9 mb-3 w-fit">
-            <img
-              src={user.profileImage || avatar}
-              alt="Your profile"
-              className="
-          h-18 w-18
-          rounded-full
-          border-4 border-white
-          object-cover
-          shadow-sm
-        "
-            />
 
-            <button
-              type="button"
-              className="
-          absolute bottom-0 right-0
-          flex h-5 w-5
-          items-center justify-center
-          rounded-full
-          border-2 border-white
-          bg-[#1a84ee]
-          text-white
-          shadow-sm
-          transition-all
-          hover:bg-[#0966c2]
-          outline-none
+      {/* =========================================
+          MAIN PAGE CONTAINER
+          
+          IMPORTANT:
+          max-w-[1200px] prevents the entire UI
+          from becoming excessively wide.
+      ========================================= */}
+      <main
+        className="
+          mx-auto
+          flex
+          w-full
+          max-w-300
+          flex-col
+          gap-4
+          px-3
+          pb-10
+          pt-20
+
+          lg:grid
+          lg:grid-cols-[220px_minmax(0,640px)]
+
+          xl:grid-cols-[220px_minmax(0,640px)_280px]
+          xl:gap-5
         "
-              aria-label="Add profile photo"
-              onClick={() => setEdit(true)}
-            >
-              <FaPlus size={9} />
-            </button>
+      >
+
+        {/* =========================================
+            LEFT SIDEBAR / PROFILE
+        ========================================= */}
+        <aside className="w-full lg:w-55">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+
+            {/* Cover */}
+            <div className="relative">
+              <img
+                src={user?.coverImage || cover}
+                alt="Cover"
+                className="
+                  h-24
+                  w-full
+                  object-cover
+                  bg-gray-300
+
+                  sm:h-28
+                "
+              />
+
+              {/* Cover edit */}
+              <button
+                type="button"
+                className="
+                  absolute
+                  right-3
+                  top-3
+                  z-10
+                  flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white/90
+                  text-gray-600
+                  shadow-sm
+                  transition
+                  hover:bg-white
+                  hover:text-gray-900
+                "
+                aria-label="Change cover photo"
+                onClick={() => setEdit(true)}
+              >
+                <FaCamera size={13} />
+              </button>
+            </div>
+
+
+            {/* Profile information */}
+            <div className="relative px-4 pb-4">
+
+              {/* Profile picture */}
+              <div className="relative -mt-9 mb-3 w-fit">
+
+                <img
+                  src={user?.profileImage || avatar}
+                  alt="Your profile"
+                  className="
+                    h-18
+                    w-18
+                    rounded-full
+                    border-4
+                    border-white
+                    object-cover
+                    shadow-sm
+                  "
+                />
+
+                {/* Add profile image */}
+                <button
+                  type="button"
+                  className="
+                    absolute
+                    bottom-0
+                    right-0
+                    flex
+                    h-5
+                    w-5
+                    items-center
+                    justify-center
+                    rounded-full
+                    border-2
+                    border-white
+                    bg-[#0a66c2]
+                    text-white
+                    shadow-sm
+                    transition
+                    hover:bg-[#004182]
+                  "
+                  aria-label="Add profile photo"
+                  onClick={() => setEdit(true)}
+                >
+                  <FaPlus size={8} />
+                </button>
+
+              </div>
+
+
+              {/* Name */}
+              <h2
+                className="
+                  text-[17px]
+                  font-semibold
+                  leading-tight
+                  text-gray-900
+                "
+              >
+                {user?.firstName} {user?.lastName}
+              </h2>
+
+
+              {/* Headline */}
+              <p
+                className="
+                  mt-1
+                  text-[12px]
+                  leading-snug
+                  text-gray-600
+                "
+              >
+                {user?.headline || "Add a headline"}
+              </p>
+
+
+              {/* Location */}
+              {user?.location && (
+                <p
+                  className="
+                    mt-1.5
+                    text-[11px]
+                    text-gray-400
+                  "
+                >
+                  {user.location}
+                </p>
+              )}
+
+
+              {/* Edit profile */}
+              <button
+                type="button"
+                onClick={() => setEdit(true)}
+                className="
+                  mt-4
+                  flex
+                  h-9
+                  w-full
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-full
+                  border
+                  border-[#0a66c2]
+                  text-[13px]
+                  font-medium
+                  text-[#0a66c2]
+                  transition
+                  hover:bg-[#0a66c2]/5
+                "
+              >
+                Edit Profile
+                <FaPen size={11} />
+              </button>
+
+            </div>
           </div>
+        </aside>
 
-          <h2 className="text-[18px] font-semibold leading-tight text-gray-800">
-            {user?.firstName} {user?.lastName}
-          </h2>
 
-          <p className="mt-1 text-[13px] leading-snug text-gray-600">
-            {user?.headline || "Add a headline"}
-          </p>
+        {/* =========================================
+            CENTER / MAIN FEED
+          
+            THIS IS THE IMPORTANT PART.
 
-          {user?.location && (
-            <p className="mt-1.5 text-[12px] text-gray-400">{user.location}</p>
-          )}
+            max-width = 640px
 
-          <button
-            type="button"
+            The feed will NEVER stretch to 50%
+            of a huge monitor.
+        ========================================= */}
+        <section className="w-full min-w-0 space-y-4">
+
+          {/* =======================================
+              CREATE POST
+          ======================================= */}
+          <div
             className="
-        mt-4
-        h-9
-        w-full
-        rounded-full
-        border-2 border-[#2dc0ff]
-        text-[14px]
-        font-medium
-        text-[#2dc0ff]
-        transition-all
-        hover:bg-[#2dc0ff]/5
-        flex items-center justify-center gap-2 cursor-pointer
-      "
-            onClick={() => setEdit(true)}
+              rounded-xl
+              border
+              border-gray-200
+              bg-white
+              p-3
+              shadow-sm
+
+              sm:p-4
+            "
           >
-            Edit Profile <FaPen />
-          </button>
-        </div>
-      </div>
 
-      {/* CENTER */}
-      <div className="w-full lg:w-[50%] space-y-4">
-        {/* ================= CREATE POST ================= */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <img
-              src={user?.profileImage || avatar}
-              alt="Profile"
-              className="h-11 w-11 rounded-full object-cover"
+            {/* Top row */}
+            <div className="flex items-center gap-3">
+
+              <img
+                src={user?.profileImage || avatar}
+                alt="Profile"
+                className="
+                  h-10
+                  w-10
+                  shrink-0
+                  rounded-full
+                  object-cover
+
+                  sm:h-11
+                  sm:w-11
+                "
+              />
+
+              <button
+                type="button"
+                onClick={() => setOpenPostModal(true)}
+                className="
+                  flex
+                  h-10
+                  min-w-0
+                  flex-1
+                  items-center
+                  rounded-full
+                  border
+                  border-gray-300
+                  px-4
+                  text-left
+                  text-sm
+                  text-gray-500
+                  transition
+                  hover:border-gray-400
+                  hover:bg-gray-50
+
+                  sm:h-11
+                "
+              >
+                Start a post
+              </button>
+
+            </div>
+
+
+            {/* Post options */}
+            <div
+              className="
+                mt-2
+                grid
+                grid-cols-3
+                gap-1
+
+                sm:mt-3
+              "
+            >
+
+              {/* Photo */}
+              <button
+                type="button"
+                onClick={() => setOpenPostModal(true)}
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-lg
+                  px-2
+                  py-2
+                  text-xs
+                  font-medium
+                  text-gray-600
+                  transition
+                  hover:bg-gray-100
+
+                  sm:text-sm
+                "
+              >
+                <FaCamera className="text-sky-500" />
+                Photo
+              </button>
+
+
+              {/* Video */}
+              <button
+                type="button"
+                onClick={() => setOpenPostModal(true)}
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-lg
+                  px-2
+                  py-2
+                  text-xs
+                  font-medium
+                  text-gray-600
+                  transition
+                  hover:bg-gray-100
+
+                  sm:text-sm
+                "
+              >
+                <span className="text-green-500">
+                  ▶
+                </span>
+                Video
+              </button>
+
+
+              {/* Write */}
+              <button
+                type="button"
+                onClick={() => setOpenPostModal(true)}
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-lg
+                  px-2
+                  py-2
+                  text-xs
+                  font-medium
+                  text-gray-600
+                  transition
+                  hover:bg-gray-100
+
+                  sm:text-sm
+                "
+              >
+                <FaPen className="text-orange-500" />
+                Write
+              </button>
+
+            </div>
+
+          </div>
+
+
+          {/* =======================================
+              POSTS
+          ======================================= */}
+          {posts?.map((post, index) => (
+            <Post
+              key={post._id}
+              post={post}
             />
+          ))}
 
-            <button
-              type="button"
-              onClick={() => setOpenPostModal(true)}
+        </section>
+
+        <aside className="hidden xl:block">
+
+          <div
+            className="
+              rounded-xl
+              border
+              border-gray-200
+              bg-white
+              p-4
+              shadow-sm
+            "
+          >
+
+            <h3
               className="
-          flex h-11 flex-1 items-center
-          rounded-full
-          border border-gray-300
-          px-4
-          text-left
-          text-sm
-          text-gray-500
-          transition
-          hover:bg-gray-50
-          hover:border-gray-400
-        "
+                text-sm
+                font-semibold
+                text-gray-900
+              "
             >
-              Start a post
-            </button>
+              {/* LinkedIn Clone */}
+              Right Div
+            </h3>
+
+            <p
+              className="
+                mt-2
+                text-xs
+                leading-5
+                text-gray-500
+              "
+            >
+              Discover people, follow interesting
+              content and grow your professional network.
+            </p>
+
           </div>
 
-          <div className="mt-3 flex items-center justify-between px-1">
-            <button
-              type="button"
-              onClick={() => setOpenPostModal(true)}
-              className="
-          flex items-center gap-2
-          rounded-lg px-3 py-2
-          text-sm font-medium text-gray-600
-          transition
-          hover:bg-gray-100
-        "
-            >
-              <FaCamera className="text-sky-500" />
-              Photo
-            </button>
+        </aside>
 
-            <button
-              type="button"
-              onClick={() => setOpenPostModal(true)}
-              className="
-          flex items-center gap-2
-          rounded-lg px-3 py-2
-          text-sm font-medium text-gray-600
-          transition
-          hover:bg-gray-100
-        "
-            >
-              <span className="text-green-500">▶</span>
-              Video
-            </button>
+      </main>
 
-            <button
-              type="button"
-              onClick={() => setOpenPostModal(true)}
-              className="
-          flex items-center gap-2
-          rounded-lg px-3 py-2
-          text-sm font-medium text-gray-600
-          transition
-          hover:bg-gray-100
-        "
-            >
-              <FaPen className="text-orange-500" />
-              Write
-            </button>
-          </div>
-        </div>
+      {edit && <EditProfile />}
 
-        {/* ================= POST 1 ================= */}
-        {posts.map(p => <Post post={p}/>)}
+      <CreatePostModal
+        open={openPostModal}
+        setOpen={setOpenPostModal}
+        user={user}
+      />
 
-      </div>
-
-      {/* RIGHT */}
-      <div className="w-full lg:w-[25%] min-h-50 bg-white shadow-lg"></div>
-      <div className="m-20 absolute">
-        <CreatePostModal
-          open={openPostModal}
-          setOpen={setOpenPostModal}
-          user={user}
-        />
-      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

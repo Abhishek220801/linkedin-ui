@@ -4,7 +4,7 @@ import Signup from "./pages/Signup"
 import Login from "./pages/Login"
 import VerifyEmail from "./pages/VerifyEmail"
 import useAuthStore from "../store/store"
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import httpInterceptor from "./utils/httpInterceptor"
 import NotFound from "./pages/NotFound"
 
@@ -12,8 +12,6 @@ function App() {
   let user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const clearUser = useAuthStore((state) => state.clearUser);
-
-  const userRef = useRef(null);
 
   useEffect(() => {
     const checkAuth = async () => {

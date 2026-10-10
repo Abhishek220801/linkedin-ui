@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import logo from "../assets/logo.svg"
 import { FaRegEye, FaRegEyeSlash, FaSpinner } from "react-icons/fa";
 import { useNavigate } from "react-router"
-import useCredentialsStore from "../../store/store";
 import httpInterceptor from "../utils/httpInterceptor";
 import {message} from "antd"
 import clientError from "../utils/clientError";
@@ -53,6 +52,7 @@ const Login = () => {
       if(!error) return;
       message.error(error);
     }, [error]);
+    
   return (
     <div className="w-full h-screen bg-[white] flex flex-col items-center justify-start gap-2.5">
       <div className="p-7.5 lg:p-8.75 w-full h-20 flex items-center">
