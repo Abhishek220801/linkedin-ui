@@ -227,6 +227,7 @@ const EditProfile = () => {
                   text-sm font-medium text-white
                   backdrop-blur-md
                   transition
+                  cursor-pointer
                   hover:bg-black/70
                 "
                 onClick={() => handleImage("coverImage")}
@@ -260,6 +261,7 @@ const EditProfile = () => {
                     text-gray-700
                     shadow-md
                     transition
+                    cursor-pointer
                     hover:bg-gray-50
                   "
                   onClick={() => handleImage("profileImage")}

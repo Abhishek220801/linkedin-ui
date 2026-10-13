@@ -90,7 +90,7 @@ const toolButtonClass = `
 const CreatePostModal = ({ open, setOpen, user }) => {
   const [content, setContent] = useState("")
   const [audience, setAudience] = useState("Anyone")
-  const [images, setImages] = useState([]) // [{ file, preview }]
+  const [images, setImages] = useState([])
   const inFlight = useRef(0)
   const addPost = usePostStore((s) => s.addPost)
   

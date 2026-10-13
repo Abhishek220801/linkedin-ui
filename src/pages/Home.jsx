@@ -1,52 +1,61 @@
-import Navbar from "../shared/Navbar";
-import avatar from "../assets/avatar.png";
-import { FaCamera, FaPen, FaPlus } from "react-icons/fa";
-import useAuthStore from "../../store/store";
-import EditProfile from "../shared/EditProfile";
-import { useShallow } from "zustand/shallow";
-import cover from "../assets/cover.png";
-import { useEffect, useState } from "react";
-import CreatePostModal from "../shared/CreatePostModal";
-import httpInterceptor from "../utils/httpInterceptor";
-import usePostStore from "../../store/usePostStore";
-import Post from "./Post";
+import Navbar from "../shared/Navbar"
+import avatar from "../assets/avatar.png"
+import { FaCamera, FaPen, FaPlus } from "react-icons/fa"
+import useAuthStore from "../../store/store"
+import EditProfile from "../shared/EditProfile"
+import { useShallow } from "zustand/shallow"
+import cover from "../assets/cover.png"
+import { useEffect, useState } from "react"
+import CreatePostModal from "../shared/CreatePostModal"
+import httpInterceptor from "../utils/httpInterceptor"
+import usePostStore from "../../store/usePostStore"
+import Post from "./Post"
 
 const Home = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state) => state.user)
 
   const [edit, setEdit] = useAuthStore(
-    useShallow((state) => [state.edit, state.setEdit])
-  );
+    useShallow((state) => [state.edit, state.setEdit]),
+  )
 
-  const posts = usePostStore((state) => state.posts);
-  const setPosts = usePostStore((state) => state.setPosts);
+  const posts = usePostStore((state) => state.posts)
+  const setPosts = usePostStore((state) => state.setPosts)
+  const updatePost = usePostStore(state => state.updatePost)
 
-  const [openPostModal, setOpenPostModal] = useState(false);
+  const [openPostModal, setOpenPostModal] = useState(false)
+  const [loading, setLoading] = useState(false);
 
-  // -----------------------------------------
-  // Fetch posts
-  // -----------------------------------------
   const fetchPosts = async () => {
     try {
-      const { data } = await httpInterceptor.get("/api/post");
-      setPosts(data.posts);
+      const { data } = await httpInterceptor.get("/api/post")
+      setPosts(data.posts)
     } catch (err) {
-      console.dir(err);
+      console.dir(err)
     }
-  };
+  }
+
+  const likePost = async (postId) => {
+    try {
+      setLoading(true);
+      const { data } = await httpInterceptor.post(`/api/post/${postId}/like`)
+      updatePost(postId, { liked: data.liked, likeCount: data.likeCount })
+    } catch (err) {
+      console.dir(err)
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    fetchPosts();
-  }, [setPosts]);
+    fetchPosts()
+  }, [updatePost, setPosts])
 
   return (
     <div className="min-h-screen w-full bg-[#f3f2ef]">
-
       {/* =========================================
           NAVBAR
       ========================================= */}
       <Navbar />
-
 
       {/* =========================================
           MAIN PAGE CONTAINER
@@ -74,13 +83,11 @@ const Home = () => {
           xl:gap-5
         "
       >
-
         {/* =========================================
             LEFT SIDEBAR / PROFILE
         ========================================= */}
         <aside className="w-full lg:w-55">
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-
             {/* Cover */}
             <div className="relative">
               <img
@@ -116,6 +123,7 @@ const Home = () => {
                   transition
                   hover:bg-white
                   hover:text-gray-900
+                  cursor-pointer
                 "
                 aria-label="Change cover photo"
                 onClick={() => setEdit(true)}
@@ -124,13 +132,10 @@ const Home = () => {
               </button>
             </div>
 
-
             {/* Profile information */}
             <div className="relative px-4 pb-4">
-
               {/* Profile picture */}
               <div className="relative -mt-9 mb-3 w-fit">
-
                 <img
                   src={user?.profileImage || avatar}
                   alt="Your profile"
@@ -164,6 +169,7 @@ const Home = () => {
                     text-white
                     shadow-sm
                     transition
+                    cursor-pointer
                     hover:bg-[#004182]
                   "
                   aria-label="Add profile photo"
@@ -171,9 +177,7 @@ const Home = () => {
                 >
                   <FaPlus size={8} />
                 </button>
-
               </div>
-
 
               {/* Name */}
               <h2
@@ -187,7 +191,6 @@ const Home = () => {
                 {user?.firstName} {user?.lastName}
               </h2>
 
-
               {/* Headline */}
               <p
                 className="
@@ -199,7 +202,6 @@ const Home = () => {
               >
                 {user?.headline || "Add a headline"}
               </p>
-
 
               {/* Location */}
               {user?.location && (
@@ -213,7 +215,6 @@ const Home = () => {
                   {user.location}
                 </p>
               )}
-
 
               {/* Edit profile */}
               <button
@@ -240,11 +241,9 @@ const Home = () => {
                 Edit Profile
                 <FaPen size={11} />
               </button>
-
             </div>
           </div>
         </aside>
-
 
         {/* =========================================
             CENTER / MAIN FEED
@@ -257,7 +256,6 @@ const Home = () => {
             of a huge monitor.
         ========================================= */}
         <section className="w-full min-w-0 space-y-4">
-
           {/* =======================================
               CREATE POST
           ======================================= */}
@@ -273,10 +271,8 @@ const Home = () => {
               sm:p-4
             "
           >
-
             {/* Top row */}
             <div className="flex items-center gap-3">
-
               <img
                 src={user?.profileImage || avatar}
                 alt="Profile"
@@ -317,9 +313,7 @@ const Home = () => {
               >
                 Start a post
               </button>
-
             </div>
-
 
             {/* Post options */}
             <div
@@ -332,7 +326,6 @@ const Home = () => {
                 sm:mt-3
               "
             >
-
               {/* Photo */}
               <button
                 type="button"
@@ -350,14 +343,12 @@ const Home = () => {
                   text-gray-600
                   transition
                   hover:bg-gray-100
-
                   sm:text-sm
                 "
               >
                 <FaCamera className="text-sky-500" />
                 Photo
               </button>
-
 
               {/* Video */}
               <button
@@ -380,12 +371,9 @@ const Home = () => {
                   sm:text-sm
                 "
               >
-                <span className="text-green-500">
-                  ▶
-                </span>
+                <span className="text-green-500">▶</span>
                 Video
               </button>
-
 
               {/* Write */}
               <button
@@ -411,26 +399,18 @@ const Home = () => {
                 <FaPen className="text-orange-500" />
                 Write
               </button>
-
             </div>
-
           </div>
-
 
           {/* =======================================
               POSTS
           ======================================= */}
-          {posts?.map((post, index) => (
-            <Post
-              key={post._id}
-              post={post}
-            />
+          {posts?.map((post, _index) => (
+            <Post key={post._id} post={post} like={() => likePost(post._id)} loading={loading}/>
           ))}
-
         </section>
 
         <aside className="hidden xl:block">
-
           <div
             className="
               rounded-xl
@@ -441,7 +421,6 @@ const Home = () => {
               shadow-sm
             "
           >
-
             <h3
               className="
                 text-sm
@@ -461,14 +440,11 @@ const Home = () => {
                 text-gray-500
               "
             >
-              Discover people, follow interesting
-              content and grow your professional network.
+              Discover people, follow interesting content and grow your
+              professional network.
             </p>
-
           </div>
-
         </aside>
-
       </main>
 
       {edit && <EditProfile />}
@@ -478,9 +454,8 @@ const Home = () => {
         setOpen={setOpenPostModal}
         user={user}
       />
-
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home
