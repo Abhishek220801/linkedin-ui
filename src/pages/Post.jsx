@@ -3,8 +3,10 @@ import avatar from "../assets/avatar.png"
 import moment from "moment"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import httpInterceptor from "../utils/httpInterceptor.js"
+import useAuthStore from "../../store/store.js"
 import usePostStore from "../../store/usePostStore.js"
 import { useNavigate } from "react-router"
+import useCommentStore from "../../store/useCommentStore.js"
 
 const Post = ({ post, like, loading }) => {
   const {
@@ -24,6 +26,7 @@ const Post = ({ post, like, loading }) => {
   const [more, setMore] = useState(false)
   const [isOverflowing, setIsOverflowing] = useState(false)
 
+  const posts = usePostStore((state) => state.posts)
   const setPosts = usePostStore((state) => state.setPosts)
   const updatePost = usePostStore((state) => state.updatePost)
 
@@ -53,6 +56,20 @@ const Post = ({ post, like, loading }) => {
   const [commentsLoading, setCommentsLoading] = useState(false)
   const [commentSubmitting, setCommentSubmitting] = useState(false)
   const [commentError, setCommentError] = useState("")
+
+  const user = useAuthStore((state) => state.user)
+
+  const previewComments = useCommentStore(
+    (state) => state.previewCommentsByPost[id],
+  )
+
+  const setPreviewComments = useCommentStore(
+    (state) => state.setPreviewComments,
+  )
+
+  const addPreviewComment = useCommentStore((state) => state.addPreviewComment)
+
+  const visibleComments = previewComments ?? []
 
   useEffect(() => {
     const element = descriptionRef.current
@@ -109,28 +126,18 @@ const Post = ({ post, like, loading }) => {
     touchStartX.current = null
   }
 
-  // const likePost = async (postId) => {
-  //   try {
-  //     const { data } = await httpInterceptor.post(`/api/post/${postId}/like`)
-  //     updatePost(postId, { liked: data.liked, likesCount: data.likesCount })
-  //   } catch (err) {
-  //     console.dir(err)
-  //   }
-  // }
-
   const fetchRecentComments = async () => {
     setCommentsLoading(true)
     setCommentError("")
 
     try {
       const { data } = await httpInterceptor.get(
-        `/api/post/${id}/comments`,
+        `/api/post/${id}/comments?limit=3`,
       )
-      console.log(data);
 
-      setComments(data.comments ?? [])
+      setPreviewComments(id, data.comments ?? [])
     } catch (err) {
-      console.dir(err)
+      console.error("Fetch recent comments error:", err)
       setCommentError(err.response?.data?.message || "Failed to load comments.")
     } finally {
       setCommentsLoading(false)
@@ -138,12 +145,13 @@ const Post = ({ post, like, loading }) => {
   }
 
   const toggleComments = async () => {
-    const shouldOpen = !commentsOpen
-    setCommentsOpen(shouldOpen)
-
-    if (shouldOpen) {
-      await fetchRecentComments()
+    if (commentsOpen) {
+      setCommentsOpen(false)
+      return
     }
+
+    setCommentsOpen(true)
+    await fetchRecentComments()
   }
 
   const submitComment = async (e) => {
@@ -157,17 +165,15 @@ const Post = ({ post, like, loading }) => {
     setCommentError("")
 
     try {
-      const { data } = await httpInterceptor.post(`/api/post/${id}/comments`, {
+      const { data } = await httpInterceptor.post(`/api/post/${id}/comment`, {
         content,
       })
 
-      // Expected response: { comment: {...}, commentCount: number }
-      if (data.comment) {
-        setComments((prev) => [data.comment, ...prev].slice(0, 3))
-      } else {
-        // Fallback if your API doesn't return the created comment.
-        await fetchRecentComments()
+      if (!data.comment) {
+        throw new Error("The server did not return the created comment.")
       }
+
+      addPreviewComment(id, data.comment)
 
       updatePost(id, {
         commentCount: data.commentCount ?? (Number(commentCount) || 0) + 1,
@@ -175,26 +181,30 @@ const Post = ({ post, like, loading }) => {
 
       setCommentText("")
     } catch (err) {
-      console.error(err)
-      setCommentError(err.response?.data?.message || "Failed to post comment.")
+      console.error("Submit comment error:", err)
+
+      setCommentError(
+        err.response?.data?.message || err.message || "Failed to post comment.",
+      )
     } finally {
       setCommentSubmitting(false)
     }
   }
 
-  const fetchPosts = async () => {
-    try {
-      const { data } = await httpInterceptor.get("/api/post")
-      setPosts(data.posts)
-    } catch (err) {
-      console.dir(err)
-    }
-  }
+  // const fetchPosts = async () => {
+  //   try {
+  //     const { data } = await httpInterceptor.get("/api/post")
+  //     setPosts(data.posts)
+  //   } catch (err) {
+  //     console.dir(err)
+  //   }
+  // }
 
-  useEffect(() => {
-    console.log(post.liked)
-    fetchPosts()
-  }, [updatePost])
+  // useEffect(() => {
+  //   console.log(previewComments)
+  //   fetchPosts()
+  //   fetchRecentComments()
+  // }, [setComments, setPreviewComments, updatePost])
 
   return (
     <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -534,7 +544,7 @@ const Post = ({ post, like, loading }) => {
               font-medium
               transition
               cursor-pointer
-              ${liked ? "text-blue-500 bg-blue-50 ": "text-gray-600 hover:bg-gray-50"}
+              ${liked ? "text-blue-500 bg-blue-50 " : "text-gray-600 hover:bg-gray-50"}
               `}
             onClick={like}
             disabled={loading}
@@ -602,7 +612,7 @@ const Post = ({ post, like, loading }) => {
           {/* Comment input */}
           <form onSubmit={submitComment} className="flex items-center gap-2">
             <img
-              src={author?.profileImage || avatar}
+              src={user?.profileImage || avatar}
               alt="Profile"
               className="h-9 w-9 rounded-full object-cover"
             />
@@ -640,6 +650,7 @@ const Post = ({ post, like, loading }) => {
           )}
 
           {/* Recent comments */}
+
           <div className="mt-5">
             <h4 className="mb-3 text-sm font-semibold text-gray-800">
               Recent comments
@@ -647,16 +658,16 @@ const Post = ({ post, like, loading }) => {
 
             {commentsLoading ? (
               <p className="py-3 text-sm text-gray-500">Loading comments...</p>
-            ) : comments.length === 0 ? (
+            ) : visibleComments.length === 0 ? (
               <p className="py-2 text-sm text-gray-500">
                 No comments yet. Start the conversation.
               </p>
             ) : (
               <div className="space-y-4">
-                {comments.map((comment) => (
+                {visibleComments.map((comment) => (
                   <div key={comment._id} className="flex items-start gap-3">
                     <img
-                      src={comment.user?.profileImage || avatar}
+                      src={comment.author?.profileImage || avatar}
                       alt="Commenter"
                       className="h-9 w-9 rounded-full object-cover"
                     />
@@ -664,9 +675,9 @@ const Post = ({ post, like, loading }) => {
                     <div className="min-w-0 flex-1 rounded-xl bg-gray-100 px-3 py-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <p className="text-sm font-semibold text-gray-900">
-                          {comment.user?.firstName
-                            ? `${comment.user.firstName} ${comment.user.lastName || ""}`
-                            : comment.user?.username || "User"}
+                          {comment.author?.firstName
+                            ? `${comment.author.firstName} ${comment.author.lastName || ""}`
+                            : comment.author?.userName || "User"}
                         </p>
 
                         {comment.createdAt && (
@@ -684,19 +695,17 @@ const Post = ({ post, like, loading }) => {
                 ))}
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => navigate(`/posts/${id}/comments`)}
+              className="mt-4 w-full rounded-lg py-2 text-sm font-semibold text-[#0a66c2] transition hover:bg-blue-50"
+            >
+              View all comments →
+            </button>
           </div>
 
           {/* Full comments page */}
-          <button
-            type="button"
-            onClick={() => navigate(`/posts/${id}/comments`)}
-            className="
-                mt-4 w-full rounded-lg py-2 text-sm font-semibold
-                text-[#0a66c2] transition hover:bg-blue-50
-            "
-          >
-            View all comments →
-          </button>
         </div>
       )}
     </article>
