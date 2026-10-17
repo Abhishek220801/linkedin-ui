@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import avatar from "../assets/avatar.png"
 import moment from "moment"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, ThumbsUp } from "lucide-react"
 import httpInterceptor from "../utils/httpInterceptor.js"
 import useAuthStore from "../../store/store.js"
 import usePostStore from "../../store/usePostStore.js"
@@ -549,7 +549,7 @@ const Post = ({ post, like, loading }) => {
             onClick={like}
             disabled={loading}
           >
-            👍 Like
+            <ThumbsUp size={17}/>
           </button>
 
           {/* Comment */}

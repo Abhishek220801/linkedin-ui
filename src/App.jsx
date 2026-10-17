@@ -7,6 +7,8 @@ import useAuthStore from "../store/store"
 import { useEffect } from "react"
 import httpInterceptor from "./utils/httpInterceptor"
 import NotFound from "./pages/NotFound"
+import PostComments from "./pages/PostComments"
+import SinglePost from "./pages/SinglePost"
 
 function App() {
   let user = useAuthStore((state) => state.user);
@@ -34,6 +36,11 @@ function App() {
       <Route path="/signup" element={user ? <Navigate to="/"/> : <Signup/>} />
       <Route path="/login" element={user ? <Navigate to="/"/> : <Login/>} />
       <Route path="/api/auth/verify-email" element={<VerifyEmail/>} />
+      <Route path="/posts">
+        <Route path=":postId" element={<SinglePost/>}/>
+        <Route path=":postId/comments" element={<PostComments/>}/>
+        {/* <Route path=":postId/comments" element={<PostComments/>}/> */}
+      </Route>
       <Route path="*" element={<NotFound/>} />
     </Routes>
   )
